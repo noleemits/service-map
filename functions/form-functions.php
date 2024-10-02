@@ -8,16 +8,6 @@ function display_service_area_form_shortcode() {
 }
 add_shortcode('service_area_form', 'display_service_area_form_shortcode');
 
-// Register REST API endpoint for saving service areas
-add_action('rest_api_init', function () {
-    register_rest_route('myplugin/v1', '/save_service_areas', array(
-        'methods' => 'POST',
-        'callback' => 'save_service_areas',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        },
-    ));
-});
 
 // Handle form submission and update the post meta for service areas
 function save_service_areas(WP_REST_Request $request) {
