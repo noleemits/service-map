@@ -1,64 +1,70 @@
 document.addEventListener('DOMContentLoaded', function () {
     let isSubmitting = false;
 
-    // Function to initialize Tom Select
-    function initializeTomSelect() {
-        // Destroy any existing Tom Select instance before re-initializing
-        if (document.getElementById('included-service-areas').tomselect) {
-            document.getElementById('included-service-areas').tomselect.destroy();
+    // Function to initialize Choices.js
+    function initializeChoices() {
+        // Destroy any existing Choices.js instance before re-initializing
+        if (document.getElementById('included-service-areas').choicesInstance) {
+            document.getElementById('included-service-areas').choicesInstance.destroy();
         }
-        if (document.getElementById('excluded-service-areas').tomselect) {
-            document.getElementById('excluded-service-areas').tomselect.destroy();
+        if (document.getElementById('excluded-service-areas').choicesInstance) {
+            document.getElementById('excluded-service-areas').choicesInstance.destroy();
         }
 
-        // Initialize Tom Select for included and excluded service areas
-        const includedSelect = new TomSelect('#included-service-areas', { plugins: ['remove_button'], create: false });
-        const excludedSelect = new TomSelect('#excluded-service-areas', { plugins: ['remove_button'], create: false });
+        // Initialize Choices.js for included and excluded service areas
+        const includedSelect = new Choices('#included-service-areas', {
+            removeItemButton: true,
+            shouldSort: false,
+            placeholder: true,
+            searchEnabled: true,
+        });
+
+        const excludedSelect = new Choices('#excluded-service-areas', {
+            removeItemButton: true,
+            shouldSort: false,
+            placeholder: true,
+            searchEnabled: true,
+        });
+
+        // Store the instance for later use
+        document.getElementById('included-service-areas').choicesInstance = includedSelect;
+        document.getElementById('excluded-service-areas').choicesInstance = excludedSelect;
 
         return { includedSelect, excludedSelect };
     }
 
-    // Function to filter "Not Covered" options based on "Included" selections
-    function filterExcludedOptions(selectedIncludedAreas) {
-        console.log("filterExcludedOptions called");
+    // Function to filter options between included and excluded selects
+    function filterOptions(includedSelect, excludedSelect) {
+        const selectedIncluded = includedSelect.getValue(true);  // Get selected values from included
+        const selectedExcluded = excludedSelect.getValue(true);  // Get selected values from excluded
 
-        const excludedSelect = document.getElementById('excluded-service-areas').tomselect;
-        excludedSelect.clearOptions(); // Clear all options first
+        // Get all available options in both selects
+        const includedOptions = [...document.querySelectorAll('#included-service-areas option')];
+        const excludedOptions = [...document.querySelectorAll('#excluded-service-areas option')];
 
-        const allServiceAreas = [...document.querySelectorAll('#included-service-areas option')];
-
-        allServiceAreas.forEach(option => {
-            if (!selectedIncludedAreas.includes(option.value)) {
-                excludedSelect.addOption({ value: option.value, text: option.text }); // Add only unselected areas
+        // Clear excluded select and add only unselected included areas
+        excludedSelect.clearChoices();
+        includedOptions.forEach(option => {
+            if (!selectedIncluded.includes(option.value)) {
+                excludedSelect.setChoices([{ value: option.value, label: option.text }], 'value', 'label', false);
             }
         });
-        excludedSelect.refreshOptions(); // Refresh Tom Select
-    }
 
-    // Function to filter "Included" options based on "Not Covered" selections
-    function filterIncludedOptions(selectedExcludedAreas) {
-        console.log("filterIncludedOptions defined");
-
-        const includedSelect = document.getElementById('included-service-areas').tomselect;
-        includedSelect.clearOptions(); // Clear all options first
-
-        const allServiceAreas = [...document.querySelectorAll('#excluded-service-areas option')];
-
-        allServiceAreas.forEach(option => {
-            if (!selectedExcludedAreas.includes(option.value)) {
-                includedSelect.addOption({ value: option.value, text: option.text }); // Add only unselected areas
+        // Clear included select and add only unselected excluded areas
+        includedSelect.clearChoices();
+        excludedOptions.forEach(option => {
+            if (!selectedExcluded.includes(option.value)) {
+                includedSelect.setChoices([{ value: option.value, label: option.text }], 'value', 'label', false);
             }
         });
-        includedSelect.refreshOptions(); // Refresh Tom Select
     }
 
     // Fetch service areas from the REST API
     fetch('/wp-json/wp/v2/service_areas')
         .then(response => response.json())
         .then(data => {
-            // Clear previous options before appending new ones
-            document.getElementById('included-service-areas').innerHTML = ''; // Clear included options
-            document.getElementById('excluded-service-areas').innerHTML = ''; // Clear excluded options
+            document.getElementById('included-service-areas').innerHTML = '';
+            document.getElementById('excluded-service-areas').innerHTML = '';
 
             // Loop through service areas and append options
             data.forEach(area => {
@@ -69,33 +75,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('excluded-service-areas').appendChild(optionExcluded);
             });
 
-            // Initialize Tom Select after appending options
-            const selects = initializeTomSelect();
-            const { includedSelect, excludedSelect } = selects;
+            // Initialize Choices.js after appending options
+            const { includedSelect, excludedSelect } = initializeChoices();
 
             // Pre-select existing service areas
             const existingSelectedAreas = Array.isArray(existingServiceAreaData.selected) ? existingServiceAreaData.selected : [];
             const existingNotCoveredAreas = Array.isArray(existingServiceAreaData.not_covered) ? existingServiceAreaData.not_covered : [];
 
-            // Set pre-selected values in Tom Select
-            includedSelect.setValue(existingSelectedAreas);
-            excludedSelect.setValue(existingNotCoveredAreas);
+            // Set pre-selected values in Choices.js
+            includedSelect.setChoiceByValue(existingSelectedAreas);
+            excludedSelect.setChoiceByValue(existingNotCoveredAreas);
 
             // Filter options based on pre-selected values
-            filterExcludedOptions(existingSelectedAreas);
-            filterIncludedOptions(existingNotCoveredAreas);
+            filterOptions(includedSelect, excludedSelect);
 
             // Filter options when selection changes
-            includedSelect.on('change', function () {
-                filterExcludedOptions(includedSelect.getValue()); // No need for safety check since it's defined
+            document.querySelector('#included-service-areas').addEventListener('change', function () {
+                filterOptions(includedSelect, excludedSelect);
             });
 
-            excludedSelect.on('change', function () {
-                filterIncludedOptions(excludedSelect.getValue()); // No need for safety check since it's defined
+            document.querySelector('#excluded-service-areas').addEventListener('change', function () {
+                filterOptions(includedSelect, excludedSelect);
             });
         })
         .catch(error => console.error('Error fetching service areas:', error));
-
 
     // Form submission logic
     document.getElementById('service-area-form').addEventListener('submit', function (event) {
@@ -107,8 +110,8 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('Form submitted!');
 
         // Get selected included and excluded service areas
-        const includedServiceAreas = document.getElementById('included-service-areas').tomselect.getValue();
-        const excludedServiceAreas = document.getElementById('excluded-service-areas').tomselect.getValue();
+        const includedServiceAreas = document.getElementById('included-service-areas').choicesInstance.getValue(true);
+        const excludedServiceAreas = document.getElementById('excluded-service-areas').choicesInstance.getValue(true);
 
         console.log('Included Service Areas:', includedServiceAreas);
         console.log('Excluded Service Areas:', excludedServiceAreas);

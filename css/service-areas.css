@@ -1,45 +1,8 @@
-#user-map {
-    margin-bottom: 20px;
-}
-
-#service-area-form select {
-    width: 100%;
-    margin-bottom: 20px;
-}
-
-
-#service-area-form .ts-wrapper.multi .ts-control > div{
-    background-color: #F5CD1D;
-    color: #000;
-    /* border-right: 7px solid #F5CD1D; */
-    /* padding-bottom: 4px; */
+.choices__input.choices__input--cloned {
+    width: 100px !important;
   }
-/* Override the WooCommerce remove button styles */
-.woocommerce-js a.remove::before {
-    border-radius: 0; /* Make it square instead of circular */
-    border: none; /* Remove the border that creates the circle */
-    display: none; /* Hide the WooCommerce-specific pseudo-element */
-}
-
-/* Style the Tom Select remove button */
-.ts-wrapper.plugin-remove_button .item .remove {
-    border-radius: 0; /* Make the remove button square */
-    padding: 2px 6px; /* Adjust padding */
-    border: 1px solid #d0d0d0; /* Add border to maintain the box look */
-    box-sizing: border-box;
-    vertical-align: middle;
-    margin-left: 6px;
-}
-
-/* Adjust the remove "X" alignment */
-.ts-wrapper.plugin-remove_button .item .remove::before {
-    content: 'X'; /* Display the 'X' directly */
-    font-size: 12px;
-    line-height: 1; /* Center the 'X' vertically */
-}
-
   
-  #service-area-form button{
+  #service-area-form button[type="submit"]{
       background-color: #F5CD1D;
     color: #000;
     margin-top: 1.5rem;
